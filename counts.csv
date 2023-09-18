@@ -1,0 +1,53 @@
+name,code,short_name,total_stores
+Alaska,2,AK,49
+Alabama,1,AL,85
+Arkansas,5,AR,55
+Arizona,4,AZ,488
+California,6,CA,2821
+Colorado,8,CO,481
+Connecticut,9,CT,123
+District of Columbia,11,DC,91
+Delaware,10,DE,25
+Florida,12,FL,694
+Georgia,13,GA,326
+Hawaii,15,HI,99
+Iowa,19,IA,89
+Idaho,16,ID,67
+Illinois,17,IL,575
+Indiana,18,IN,221
+Kansas,20,KS,94
+Kentucky,21,KY,116
+Louisiana,22,LA,84
+Massachusetts,25,MA,273
+Maryland,24,MD,257
+Maine,23,ME,30
+Michigan,26,MI,283
+Minnesota,27,MN,184
+Missouri,29,MO,188
+Mississippi,28,MS,32
+Montana,30,MT,36
+North Carolina,37,NC,338
+North Dakota,38,ND,13
+Nebraska,31,NE,58
+New Hampshire,33,NH,29
+New Jersey,34,NJ,261
+New Mexico,35,NM,76
+Nevada,32,NV,253
+New York,36,NY,645
+Ohio,39,OH,378
+Oklahoma,40,OK,79
+Oregon,41,OR,359
+Pennsylvania,42,PA,357
+Puerto Rico,72,RI,27
+Rhode Island,44,SC,131
+South Carolina,45,SD,25
+South Dakota,46,TN,180
+Tennessee,47,TX,1042
+Texas,48,UT,101
+Utah,49,VA,432
+Virginia,51,VT,8
+Vermont,50,WA,757
+Washington,53,WI,145
+Wisconsin,55,WV,25
+West Virginia,54,WY,23
+Wyoming,56,,

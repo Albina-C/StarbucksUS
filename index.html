@@ -1,0 +1,592 @@
+<html><head>
+    <title>Project 2</title>
+
+      <link href="https://fonts.googleapis.com/css?family=Lato:400,700|Raleway:400,700" rel="stylesheet">
+      <script src="https://unpkg.com/d3-simple-slider"></script>
+
+      <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/highlight.min.js"></script>
+
+      <script src="https://d3js.org/d3.v7.min.js"></script>
+      <script src="https://d3js.org/topojson.v3.min.js"></script>
+      <script
+          src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js">
+      </script>
+      <script src="https://unpkg.com/d3-simple-slider"></script>
+
+      <!-- Load the sankey.js function -->
+      <style>
+
+        .state-outline {
+          stroke: darkgrey;
+          stroke-width: 2px;
+          fill: none;
+        }
+
+        .graticule {
+          fill: none;
+          stroke: lightgrey;
+        }
+
+
+        .gridlines line {
+          stroke: #bbb;
+        }
+
+        .gridlines .domain {
+          stroke: none;
+        }
+        .node rect {
+          fill-opacity: .9;
+          shape-rendering: crispEdges;
+        }
+
+        .node text {
+          pointer-events: none;
+          text-shadow: 0 1px 0 #fff;
+        }
+
+        .link {
+          fill: none;
+          stroke: #000;
+          stroke-opacity: .2;
+        }
+
+        .link:hover {
+          stroke-opacity: .5;
+        }
+
+
+      .experiment{
+        display: flex;
+        flex-direction: row;
+      }
+
+      .left{
+        display: flex;
+        flex-direction: column;
+        margin: 20px;
+      }
+
+      h1{
+        text-align: center;
+        font-family:'Arial';
+      }
+
+      p{
+        font-family:'Arial';
+        margin: 20px;
+      }
+
+      
+      
+
+
+      </style>
+
+    </head>
+    <body></div></div>
+      <script src="./legend.js"></script>
+      <div class="all-descibe">
+      <h1>Starbucks Stores in the United States</h1>
+      <p style="font-family: Arial">Three visualizations can be seen in this webpage. Our goal
+         is to show the count of Starbucks stores in the U.S. while showing the
+         breakdown of store type (company owned or licensed) by state.
+         One is a U.S. map with dots representing Starbucks stores.
+          Upon clicking the states, a pie chart appears showing the distribution
+          of type of Starbucks stores per state. We can also observe an alluvial
+          plot showing the count of stores going to two types of Starbucks stores
+          (Those that are company-owned and those that are licensed).
+          The thickness of the bands going from the states to the two types of stores represents
+          the count of stores that fall in this specific store distribution.
+       </p>
+        <p style="font-family: Arial">
+          <strong>Company-owned stores</strong> generally have a higher gross margin and lower
+          operating margin than licensed stores. Under the <strong>licensed model</strong>,
+          Starbucks receives a certain margin on branded products and supplies sold
+           along with royalty on retail sales in the store (Business Quant).
+        </p>
+      
+      <p style="font-family: Arial" class="l">
+        <em>U.S. Map</em> <br>
+        Zoom in on the map to see the count of Starbucks stores by state.
+        This will also prompt a pie chart upon clicking. You may also adjust the
+        slider at the bottom of the map in order to filter only those states whose
+        Starbucks per million inhabitants ratio falls in this range.
+      </p>
+
+      <p style="font-family: Arial" class="r">
+          <em>Alluvial Plot</em> <br>
+
+        If you hover over the bands, you will see the count of stores falling in this
+        store distribution (company owned or licensed) on the top right. The thickness
+        of the bands represents the count of stores in this store type.
+      </p>
+
+      <p style="font-family: Arial">
+        <em>Pie Chart</em><br>
+        This shows the breakdown of Starbucks stores by those that are company owned
+        and licensed. The percentage of this breakdown can be seen inside the pie. You are able 
+        to display one state at a time. In order to produce a pie chart of a different state, please click 
+        reset and then proceed to click on a different state. Upon getting the alert, please refresh the page!
+
+      </p>
+    </div>
+
+          <div class = 'experiment'>
+            <div class = 'left'>
+
+              <svg id="map" height="600" width="700" style="background: #fff; margin-top:50px" ></svg>
+              <svg id="colorLegend" height="100" width="800" style="background: #fff; margin-top:30px" ></svg>
+              <div class="row align-items-center">
+                <div class="col-sm-2"><p id="value-range"></p></div>
+                <div class="col-sm"><div id="slider-range"></div></div>
+              </div>
+            </div>
+            
+
+            <svg id="alluvial" height="800" width="600" style="background: #fff; margin-top:50px" >
+              <text id="label" x="580" y="10"  text-anchor="end" alignment-baseline="hanging"></text>
+            </svg>
+
+              
+          </div>
+
+          <div id="pie"></div>
+
+          <button type='button' id="button" onclick="reset()">Reset</button>
+
+      <!-- This block will be automatically filled with syntax-highlighted code from the script below -->
+
+
+      
+      <script id="code">
+
+
+
+
+
+      // This is the function that's called when a user clicks on the reset button
+      var reset = function(){
+        map.transition().duration(1000).call(zoom.transform, d3.zoomIdentity);
+        // d3.select('#pie').attr('visibility','hidden')
+        d3.select('#alluvial').attr('visibility','visible')
+        sliderRange.value([0,860])
+    
+        
+        }
+
+        // These are the global variables needed
+      var filtered;
+      var map;
+      var zoom;
+      var sliderRange;
+      
+
+
+      // this is the main function that draws all the plot when the page first loads
+      const drawPlot = async () => {
+
+
+
+
+        // load the data
+        const us = await d3.json("us_smaller.json");
+        const stores = await d3.csv("directory.csv");
+        const longlat = await d3.csv("longlat.csv");
+
+        const states = topojson.feature(us, us.objects.states);
+        const statesMesh = topojson.mesh(us, us.objects.states);
+
+        // the function that gets called when the user hovers over a state
+        let mouseOver = function(d) {
+          d3.selectAll(".state")
+            .transition()
+            .duration(200)
+            .style("opacity", .5)
+          d3.select(this)
+            .transition()
+            .duration(200)
+            .style("opacity", 1)
+            .style("stroke", "black")
+        }
+
+        let mouseLeave = function(d) {
+          d3.selectAll(".state")
+            .transition()
+            .duration(200)
+            .style("opacity", 1)
+          d3.select(this)
+            .transition()
+            .duration(200)
+            .style("stroke", "transparent")
+        }
+
+        // create the map
+        map = d3.select("#map");
+        let mapWidth = map.attr("width");
+        let mapHeight = map.attr("height");
+        let projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], states);
+        let path = d3.geoPath().projection(projection);
+        let viewport = map.append("g");
+
+        // Add paths for everything
+        // GRATICULE
+        viewport.append("path")
+            .attr("class","graticule")
+            .attr("d",path(d3.geoGraticule10()));
+        // STATE POLYGONS
+        let states_map = viewport.selectAll(".state").data(states.features)
+            .enter()
+            .append("path")
+            .attr("class","state")
+            .attr("d", path)
+            .attr('id', function(){
+              console.log(states.feature);
+            })
+            .on('mouseover', mouseOver)
+            .on('mouseout', mouseLeave);
+
+        viewport.append("path")
+          .datum(statesMesh)
+          .attr("class","state-outline")
+          .attr("d", path);
+
+ 
+        
+        //color code the map 
+        const count = await d3.csv("combinedcounts.csv", d3.autoType);
+        console.log(count);
+        let stateCounts = {} 
+        let stateNames = {} 
+        count.forEach( row => {
+          stateCounts[ row.code ] = Number(row.total_stores);
+          stateNames[ row.code ] = row.state_province;
+        });
+        const minMax = d3.extent( Object.values(stateCounts) );
+        const colorScale = d3.scaleQuantile()
+                         .domain(Object.values(stateCounts))
+                         .range(["#9dedbd","#65c28a","#3e9130","#226317","#12330c"]);
+        map.selectAll(".state")
+          .style("fill", d => colorScale( stateCounts[d.id]) )
+
+
+        drawLegend("#colorLegend", colorScale);
+
+
+
+        // start zoom 
+        zoom = d3.zoom()
+                      .scaleExtent([1,20])
+                      .translateExtent([[-50,-50],[mapWidth+50,mapHeight+50]])  // to lock to edges
+                      .on("zoom", mapZoomed);
+
+        map.call(zoom);
+
+        
+        map.call(zoom.transform, d3.zoomIdentity); 
+
+        function mapZoomed({transform}) {       
+          
+          viewport.attr("transform", transform.toString() );
+          
+          viewport.select(".state-outline")
+                      .style("stroke-width", 2 / transform.k);
+          viewport.select(".county-outline")
+                      .style("stroke-width", 1 / transform.k);
+
+          // if zoomed in, the circles will show up
+          if (transform.k > 2){
+            longlat.forEach( d => {
+              d.Position = projection( [d.longitude, d.latitude] );
+            });
+            longlat.filter(l => l.Position != null)
+            viewport.selectAll("circle").data(longlat)
+            .join("circle")
+            .attr("r", 1)
+
+            .attr("fill", "#e01219")
+
+            .attr("cx", d => d.Position[0])
+
+            .attr("cy", d => d.Position[1]);
+
+            if(already_clicked.length === 0){
+              d3.select('#pie').attr('visibility','hidden')
+            }
+          }else{
+            viewport.selectAll("circle").remove();
+            d3.select('#pie').attr('visibility','hidden')
+            
+          }
+
+        }
+
+
+    
+        viewport.selectAll(".state").on("click",clicked);
+      
+
+      
+        // the function that gets called when a state is clicked.
+        var already_clicked=[];
+        function clicked(event, d) {
+          d3.select('#alluvial').attr('visibility','hidden')
+          
+           filtered = d3.select(this).datum().id;
+           already_clicked.push(filtered)
+           //if (already_clicked.length>1){
+            //return;
+          //}
+           console.log(already_clicked)
+           if (already_clicked.length >= 4){
+            confirm('Too many states selected! Please refresh the page.')
+           }
+
+           click = true;
+
+
+          
+          let bounds = path.bounds(d.geometry);
+          let dx = bounds[1][0] - bounds[0][0]; 
+          let dy = bounds[1][1] - bounds[0][1]; 
+          let x = (bounds[0][0] + bounds[1][0]) / 2; 
+          let y = (bounds[0][1] + bounds[1][1]) / 2; 
+          let scale = Math.max(1, Math.min(10, 0.9 / Math.max( dx / mapWidth,
+                                                               dy / mapHeight )));
+
+          
+          let translate = [mapWidth / 2 - x * scale, mapHeight / 2 - y * scale];
+
+          
+          let newTransform = d3.zoomIdentity
+                                .translate(translate[0],translate[1])
+                                .scale(scale);
+          
+          map.transition().duration(1000).call(zoom.transform, newTransform);
+
+          console.log(filtered);
+          d3.select('#alluvial').attr('visibility','hidden')
+          drawPieChart(filtered);
+          
+
+        }
+
+        // this is the function that gets called inside clicked, and a pie chart will show up.
+        function drawPieChart(id){
+            console.log(id)
+            let pieData = {};
+            let pieDataRatios = []
+            count.forEach(row => {
+              if (row['code'] === id){
+                pieData['Licensed'] = row['licensed']
+                pieData['Company Owned'] = row['company_owned']
+                pieDataRatios.push(Math.round(pieData['Licensed'] / (pieData['Licensed'] + pieData['Company Owned']) * 100) )
+                pieDataRatios.push(Math.round(pieData['Company Owned'] / (pieData['Licensed'] + pieData['Company Owned']) * 100) )
+                console.log(pieDataRatios)
+              }
+            })
+            
+
+            // Here we append our pie svg object, including our respective heights and widths
+            let width = 300, height = 300, margin = 0;
+            const radius = Math.min(width, height) / 2 - margin;
+            const pieSvg = d3.select("#pie")
+                                .append("svg")
+                                  .attr("width", width)
+                                  .attr("height", height)
+                                .append("g")
+                                  .attr("transform", `translate(${width / 2}, ${height / 2})`);
+                                  
+                      
+            let colorScale = d3.scaleOrdinal().range(d3.schemeSet2);
+            const pieChart = d3.pie()
+              .value(d => d[1])
+            var data_ready = pieChart(Object.entries(pieData))
+            console.log(data_ready)
+            const arcGenerator = d3.arc()
+                                  .innerRadius(0)
+                                  .outerRadius(radius)
+            console.log(pieData)
+            let graph = pieSvg.selectAll('mySlices')
+                              .data(data_ready)
+                              .join('path')
+                                .attr('d', arcGenerator)
+                                .attr('fill', d => colorScale(d.data[0]))
+                                .attr("stroke", "black")
+                                .style("stroke-width", "2px")
+                                .style("opacity", 0.7)
+                                console.log(graph)
+
+              // this is where we begin to add the data to our pie chart
+              pieSvg
+                .selectAll('Slices')
+                .data(data_ready)
+                .join('text')
+              
+                // this displays the data in instances where company store is licensed
+                .text(function(d){
+                  if (d.data[0] === 'Licensed'){
+                    return d.data[0] + ':' + pieDataRatios[0] + '%'
+                  }else{
+                    return d.data[0] + ':' + pieDataRatios[1] + '%'
+                  }
+                })
+                .attr("transform", function(d) { return "translate(" + arcGenerator.centroid(d) + ")";  })
+                .style("text-anchor", "middle")
+                .style("text-anchor", "middle")
+                .style("font-size", 13)
+        }
+        
+        // here we start the code for the slider 
+        // first, compute the ratios
+        let ratios = {};
+        count.forEach(s => {
+          ratios[s.code]=s['starbucks_per_million_inhabitants'];
+          
+        })
+        let ratioExtent = d3.extent(count, d=>d['starbucks_per_million_inhabitants']);
+
+        
+        // draw the slider
+        sliderRange = d3.sliderBottom()
+                            .min(ratioExtent[0])
+                            .max(ratioExtent[1])
+                            .width(300)
+                            
+                            .ticks(5)
+                            .default([0, 860])
+                            .fill('#2196f3')
+                            .on('onchange', () => highlightSelectedStates(ratios))
+                        
+
+        var gRange = d3.select('div#slider-range')
+                            .append('svg')
+                            .attr('width', 500)
+                            .attr('height', 100)
+                            .append('g')
+                            .attr('transform', 'translate(30,30)');
+
+        gRange.call(sliderRange);
+
+
+        // This function selects the state when it is hovered in the slider. This will essentially show the states 
+        // that display in the map when the range is selected
+        
+
+        function highlightSelectedStates(ratios){
+              map.selectAll('.state')
+               .style("opacity", d => {
+                  if (ratios[d.id]>= sliderRange.value()[0] && ratios[d.id]<= sliderRange.value()[1]){
+                    return 1.5;
+                  }else{
+                    return 0.2;
+                  }
+               });
+
+        }
+
+       
+        // Here we start the alluvial plot
+        const alluvial_data = await d3.json("data_states_real.json")
+        console.log(alluvial_data)
+        drawAlluvial(alluvial_data);
+
+        function drawAlluvial(alluvial_d) {
+
+          
+          //Code inspired from https://bl.ocks.org/d3noob/31665aced416f27abca4fa46f5f4b568
+          var formatNum = d3.format(",.0f"), 
+            format = function(d) { return formatNum(d); },
+            colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+          var margin = {top: 10, right: 10, bottom: 10, left: 10}
+            
+            let svg = d3.select("#alluvial")
+            let height = svg.attr('height')- margin.top - margin.bottom
+            let width = svg.attr('width')- margin.left - margin.right
+            
+            svg.attr("transform",
+                    "translate(" + margin.left + "," + margin.top + ")");
+
+            
+            var sankey = d3.sankey()
+                .nodeWidth(36)
+                .nodePadding(12)
+                .size([width, height]);
+
+            var path = sankey.links();
+
+
+    
+            graph = sankey(alluvial_d);
+          
+            var link = svg.append("g").selectAll(".link")
+                .data(graph.links)
+              .enter().append("path")
+                .attr("class", "link")
+                .attr("stroke-width", function(d) { return d.width; })
+                .attr("d", d3.sankeyLinkHorizontal())
+                .on("mouseover",function(){
+                      d3.select(this)
+                      .transition()
+                      .duration(50)
+                      
+                      let value=d3.select(this).datum()['value'];
+                      d3.select('#label').text(value+" stores");  
+                  })     
+                  .on("mouseout",function(){
+                      d3.select(this)
+                      d3.select('#label').text("")
+                  });
+
+            link.append("title")
+                  .text(function(d) {
+                      return d.source.name + " → " +
+                          d.target.name + "\n" + format(d.value); });
+                          
+            var node = svg.append("g").selectAll(".node")
+                .data(graph.nodes)
+              .enter().append("g")
+                .attr("class", "node");
+
+            node
+            .append("rect")
+                .attr("x", function(d) { return d.x0; })
+                .attr("y", function(d) { return d.y0; })
+                .attr("height", function(d) { return d.y1 - d.y0; })
+                .attr("width", sankey.nodeWidth())
+                .style("stroke", function(d) {
+                return d3.rgb(d.color).darker(2); })
+                .style("fill", function(d) {
+                    return d.color = colorScale(d.name.replace(/ .*/, "")); })
+              .append("title")
+                .text(function(d) {
+                return d.name + "\n" + format(d.value); });
+
+
+            node
+              .append("text")
+                .attr("x", function(d) { return d.x0 - 6; })
+                .attr("y", function(d) { return (d.y1 + d.y0) / 2; })
+                .attr("dy", "0.35em")
+                .attr("text-anchor", "end")
+                .text(function(d) { return d.name; })
+              .filter(function(d) { return d.x0 < width / 2; })
+                .attr("x", function(d) { return d.x1 + 6; })
+                .attr("text-anchor", "start");
+
+          //Code inspired from https://bl.ocks.org/d3noob/31665aced416f27abca4fa46f5f4b568
+          };
+        }
+
+    
+      drawPlot();
+      </script>
+
+
+
+    </div>
+
+  </div>
+  </div>
+</body>
+</html>
